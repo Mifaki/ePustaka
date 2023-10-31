@@ -1,10 +1,12 @@
 from kivy.lang import Builder
 from kivymd.app import MDApp
 from kivymd.uix.card import MDCard
-from kivy.uix.screenmanager import Screen, ScreenManager
-from kivymd.uix.bottomnavigation import MDBottomNavigation, MDBottomNavigationItem
+from kivymd.uix.boxlayout import MDBoxLayout
 from kivy.uix.scrollview import ScrollView
 from kivy.core.window import Window
+from kivymd.uix.textfield import MDTextField
+from kivymd.uix.button import MDIconButton
+from kivymd.uix.bottomnavigation import MDBottomNavigation, MDBottomNavigationItem
 
 Window.size = (400, 800)
 
@@ -99,10 +101,22 @@ BoxLayout:
 '''
         ))
 
-class Test(MDApp):
+class ePustaka(MDApp):
     def build(self):
         self.theme_cls.material_style = "M3"
         self.theme_cls.theme_style = "Light"
+
+        def on_search(instance, value):
+            layout.clear_widgets()
+            for book in book_data:
+                if value.lower() in book['title'].lower():
+                    layout.add_widget(BookCard(book))
+
+        search_bar = MDBoxLayout(spacing=10, padding=10)
+        search_textfield = MDTextField(hint_text="Search", on_text=on_search)
+        search_button = MDIconButton(icon="magnify", on_release=lambda x: on_search(search_textfield, search_textfield.text))
+        search_bar.add_widget(search_textfield)
+        search_bar.add_widget(search_button)
 
         scroll_view = ScrollView()
         layout = Builder.load_string('''
@@ -130,8 +144,11 @@ BoxLayout:
             )
         )
 
-        layout.add_widget(bottom_navigation)
+        main_layout = MDBoxLayout(orientation="vertical", spacing=10)
+        main_layout.add_widget(search_bar)
+        main_layout.add_widget(scroll_view)
+        main_layout.add_widget(bottom_navigation)
 
-        return scroll_view
+        return main_layout
 
-Test().run()
+ePustaka().run()
