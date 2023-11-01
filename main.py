@@ -3,6 +3,7 @@ from kivymd.app import MDApp
 from kivymd.uix.card import MDCard
 from kivymd.uix.boxlayout import MDBoxLayout
 from kivy.uix.scrollview import ScrollView
+from kivy.uix.gridlayout import GridLayout
 from kivy.core.window import Window
 from kivymd.uix.textfield import MDTextField
 from kivymd.uix.button import MDIconButton
@@ -65,7 +66,7 @@ class BookCard(MDCard):
         description = book_info["description"]
         
         self.orientation = "vertical"
-        self.size_hint = (None, None)
+        self.size_hint = (Window.width, None)
         self.size = ("300dp", "200dp")
         
         self.add_widget(Builder.load_string(
@@ -112,23 +113,29 @@ class ePustaka(MDApp):
                 if value.lower() in book['title'].lower():
                     layout.add_widget(BookCard(book))
 
-        search_bar = MDBoxLayout(spacing=10, padding=10)
-        search_textfield = MDTextField(hint_text="Search", on_text=on_search)
+        search_bar = MDBoxLayout(
+            orientation="horizontal",
+            spacing=10,
+            padding=10,
+            size_hint_y=None,
+            height="48dp"
+        )
+        search_textfield = MDTextField(mode="rectangle", hint_text="Search", on_text=on_search)
         search_button = MDIconButton(icon="magnify", on_release=lambda x: on_search(search_textfield, search_textfield.text))
         search_bar.add_widget(search_textfield)
         search_bar.add_widget(search_button)
 
-        scroll_view = ScrollView()
-        layout = Builder.load_string('''
-BoxLayout:
-    orientation: "vertical"
-    spacing: "8dp"
-    padding: "8dp"
-''')
+        layout = GridLayout(cols=1, spacing=8, size_hint_y=None)
+        layout.bind(minimum_height=layout.setter('height'))
 
         for book in book_data:
             layout.add_widget(BookCard(book))
-
+        scroll_view = ScrollView(
+            size_hint=(1, None),
+            size=(Window.width, Window.height + 48), 
+            do_scroll_y=True,
+            do_scroll_x=False
+        )
         scroll_view.add_widget(layout)
 
         bottom_navigation = MDBottomNavigation(
@@ -144,7 +151,7 @@ BoxLayout:
             )
         )
 
-        main_layout = MDBoxLayout(orientation="vertical", spacing=10)
+        main_layout = MDBoxLayout(orientation="vertical", spacing=0)
         main_layout.add_widget(search_bar)
         main_layout.add_widget(scroll_view)
         main_layout.add_widget(bottom_navigation)
