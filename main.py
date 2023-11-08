@@ -27,8 +27,8 @@ book_data = [
         },
         {
             "title": "To Kill a Mockingbird",
-            "status": "Unavailable",
-            "peminjaman": "Borrowed",
+            "status": "Available",
+            "peminjaman": "Not borrowed",
             "author": "Harper Lee",
             "description": "A classic novel by Harper Lee dealing with serious issues."
         },
@@ -48,8 +48,8 @@ book_data = [
         },
         {
             "title": "The Catcher in the Rye",
-            "status": "Unavailable",
-            "peminjaman": "Borrowed",
+            "status": "Available",
+            "peminjaman": "Not borrowed",
             "author": "J.D. Salinger",
             "description": "A novel by J.D. Salinger, featuring themes of teenage angst."
         },
@@ -173,7 +173,7 @@ class HomeScreen(Screen):
         bottom_nav = MDBottomNavigation()
         home_nav_item = MDBottomNavigationItem(name='home_page', text='Home', icon='home')
         history_nav_item = MDBottomNavigationItem(name='history_page', text='History', icon='history')
-        history_nav_item.bind(on_tab_press=self.switch_to_history_screen)  # bind to switch screen
+        history_nav_item.bind(on_tab_press=self.switch_to_history_screen) 
         bottom_nav.add_widget(home_nav_item)
         bottom_nav.add_widget(history_nav_item)
         self.home_layout.add_widget(bottom_nav)
@@ -233,21 +233,21 @@ class DetailScreen(Screen):
     def go_back(self, instance):
         self.manager.current = 'home' 
 
-    def borrow_book(self, instance, book_info):
+    def borrow_or_return_book(self, instance, book_info):
         if book_info['status'] == 'Available':
             book_info['status'] = 'Unavailable'
             book_info['peminjaman'] = 'Borrowed'
-            instance.text = 'Borrowed'
-            instance.disabled = True
-
+            instance.text = 'Return'  # Change the button text to "Return"
             self.update_book_status(book_info['title'], 'Unavailable', 'Borrowed')
             self.show_book_details(book_info)
-        else:
-            instance.text = 'Unavailable'
-            instance.disabled = True
+        elif book_info['status'] == 'Unavailable' and book_info['peminjaman'] == 'Borrowed':
+            book_info['status'] = 'Available'
+            book_info['peminjaman'] = 'Returned'
+            instance.text = 'Borrow'  
+            self.update_book_status(book_info['title'], 'Available', 'Returned')
+            self.show_book_details(book_info)
 
     def update_book_status(self, book_title, new_status, new_peminjaman):
-
         app = MDApp.get_running_app()
         app.root.get_screen("home").refresh_home_screen(book_title, new_status, new_peminjaman)
 
@@ -264,15 +264,12 @@ class DetailScreen(Screen):
             self.book_detail_grid.add_widget(label)
 
         borrow_button = Button(
-            text='Borrow' if book_info['status'] == 'Available' else 'Unavailable',
+            text='Borrow' if book_info['status'] == 'Available' else 'Return',
             size_hint=(1, None),
             height=40
         )
 
-        if book_info['status'] == 'Unavailable':
-            borrow_button.disabled = True
-
-        borrow_button.bind(on_release=partial(self.borrow_book, book_info=book_info))
+        borrow_button.bind(on_release=partial(self.borrow_or_return_book, book_info=book_info))
         self.book_detail_grid.add_widget(borrow_button)
 
         self.manager.current = 'detail'
@@ -283,8 +280,11 @@ class HistoryScreen(Screen):
         super(HistoryScreen, self).__init__(**kwargs)
         self.history_layout = MDBoxLayout(orientation='vertical', spacing=0)
 
-        scroll_view = ScrollView()
-        self.history_grid = GridLayout(cols=1, spacing=8, size_hint_y=None)
+        title = MDLabel(text="History", halign='center')
+        self.history_layout.add_widget(title)
+
+        scroll_view = ScrollView(size_hint_y=None, height=Window.height, do_scroll_y=True, do_scroll_x=False)
+        self.history_grid = GridLayout(cols=1, spacing=8, size_hint=(None, None), size=(Window.width, 0))
         self.history_grid.bind(minimum_height=self.history_grid.setter('height'))
         scroll_view.add_widget(self.history_grid)
 
@@ -292,7 +292,7 @@ class HistoryScreen(Screen):
 
         bottom_nav = MDBottomNavigation()
         home_nav_item = MDBottomNavigationItem(name='home_page', text='Home', icon='home')
-        home_nav_item.bind(on_tab_press=self.switch_to_home_screen)  # bind to switch screen
+        home_nav_item.bind(on_tab_press=self.switch_to_home_screen)
         history_nav_item = MDBottomNavigationItem(name='history_page', text='History', icon='history')
         bottom_nav.add_widget(home_nav_item)
         bottom_nav.add_widget(history_nav_item)
@@ -302,25 +302,26 @@ class HistoryScreen(Screen):
         self.add_widget(self.history_layout)
 
     def on_enter(self, *args):
-        self.show_borrowed_books()
+        self.show_returned_books()
 
-    def show_borrowed_books(self):
+    def show_returned_books(self):
         self.history_grid.clear_widgets() 
 
-        borrowed_books = self.get_borrowed_books()
+        returned_books = self.get_returned_books()
 
-        for book in borrowed_books:
+        for book in returned_books:
             self.add_book_to_history(book)
 
     def add_book_to_history(self, book_info):
         self.history_grid.add_widget(BookCard(book_info))
 
-    def get_borrowed_books(self):
-        home_screen = MDApp.get_running_app().root.get_screen("home")
-        return home_screen.get_borrowed_books()
+    def get_returned_books(self):
+        returned_books = [book for book in book_data if book['peminjaman'] == 'Returned']
+        return returned_books
 
     def switch_to_home_screen(self, instance):
         self.manager.current = 'home'
+
 
 class ePustaka(MDApp):
     def build(self):
@@ -351,6 +352,7 @@ class ePustaka(MDApp):
     def show_book_details(self, book_info):
         detail_screen = self.root.get_screen("detail")
         detail_screen.show_book_details(book_info)
+
 
 if __name__ == "__main__":
     ePustaka().run()
