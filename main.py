@@ -152,16 +152,13 @@ class HomeScreen(Screen):
         super(HomeScreen, self).__init__(**kwargs)
         self.home_layout = MDBoxLayout(orientation='vertical', spacing=0)
 
-        # Add the MDTextField as per the KV string
         self.search_bar = MDTextField(id='search_bar', mode='rectangle', hint_text='Search')
         search_button = MDIconButton(icon="magnify")
         search_button.bind(on_release=self.trigger_search)
 
-        # Add the search bar and search button to the layout
         self.home_layout.add_widget(self.search_bar)
         self.home_layout.add_widget(search_button)
 
-        # Adjust the ScrollView height to fill the window's height
         scroll = ScrollView(size_hint_y=None, height=Window.height, do_scroll_y=True, do_scroll_x=False)
         self.book_grid = GridLayout(cols=1, spacing=8, size_hint=(None, None), size=(Window.width, 0))
         self.book_grid.bind(minimum_height=self.book_grid.setter('height'))
@@ -173,7 +170,6 @@ class HomeScreen(Screen):
         for book in book_data:
             self.add_book_to_grid(book)
 
-        # Add MDBottomNavigation to the layout
         bottom_nav = MDBottomNavigation()
         home_nav_item = MDBottomNavigationItem(name='home_page', text='Home', icon='home')
         history_nav_item = MDBottomNavigationItem(name='history_page', text='History', icon='history')
@@ -191,14 +187,12 @@ class HomeScreen(Screen):
     def add_book_to_grid(self, book_info):
         self.book_grid.add_widget(BookCard(book_info))
 
-    # Method for searching
     def on_search(self, instance, value):
         self.clear_book_grid()
         for book in book_data:
             if value.lower() in book['title'].lower():
                 self.add_book_to_grid(book)
 
-    # Method to trigger search when the search button is pressed
     def trigger_search(self, instance):
         self.on_search(self.search_bar, self.search_bar.text)
     
@@ -225,7 +219,6 @@ class DetailScreen(Screen):
         back_button = MDIconButton(icon='arrow-left', on_release=self.go_back)
         self.detail_layout.add_widget(back_button)
 
-        # Display book details in a Scroll view
         scroll_view = ScrollView()
         self.book_detail_grid = GridLayout(cols=1, spacing=10, size_hint_y=None)
         self.book_detail_grid.bind(minimum_height=self.book_detail_grid.setter('height'))
@@ -247,7 +240,6 @@ class DetailScreen(Screen):
             instance.text = 'Borrowed'
             instance.disabled = True
 
-            # Update book status in the homepage
             self.update_book_status(book_info['title'], 'Unavailable', 'Borrowed')
             self.show_book_details(book_info)
         else:
@@ -258,7 +250,7 @@ class DetailScreen(Screen):
 
         app = MDApp.get_running_app()
         app.root.get_screen("home").refresh_home_screen(book_title, new_status, new_peminjaman)
-        # Update book status in the home screen
+
         for book in book_data:
             if book['title'] == book_title:
                 book['status'] = new_status
@@ -313,6 +305,8 @@ class HistoryScreen(Screen):
         self.show_borrowed_books()
 
     def show_borrowed_books(self):
+        self.history_grid.clear_widgets() 
+
         borrowed_books = self.get_borrowed_books()
 
         for book in borrowed_books:
