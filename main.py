@@ -11,6 +11,7 @@ from kivymd.uix.textfield import MDTextField
 from kivymd.uix.button import MDIconButton
 from kivymd.uix.label import MDLabel
 from kivymd.uix.button import MDFlatButton
+from kivymd.uix.dialog import MDDialog
 from kivymd.uix.bottomnavigation import MDBottomNavigation, MDBottomNavigationItem
 from kivy.uix.button import Button
 from kivy.uix.label import Label
@@ -20,6 +21,7 @@ Window.size = (400, 800)
 
 book_data = [
         {
+            "id": 1,
             "title": "The Great Gatsby",
             "status": "Available",
             "peminjaman": "Not borrowed",
@@ -27,6 +29,7 @@ book_data = [
             "description": "A novel written by American author F. Scott Fitzgerald."
         },
         {
+            "id": 2,
             "title": "To Kill a Mockingbird",
             "status": "Available",
             "peminjaman": "Not borrowed",
@@ -34,6 +37,7 @@ book_data = [
             "description": "A classic novel by Harper Lee dealing with serious issues."
         },
         {
+            "id": 3,
             "title": "1984",
             "status": "Available",
             "peminjaman": "Not borrowed",
@@ -41,6 +45,7 @@ book_data = [
             "description": "A dystopian social science fiction novel by George Orwell."
         },
         {
+            "id": 4,
             "title": "Pride and Prejudice",
             "status": "Available",
             "peminjaman": "Not borrowed",
@@ -48,6 +53,7 @@ book_data = [
             "description": "A romantic novel by Jane Austen."
         },
         {
+            "id": 5,
             "title": "The Catcher in the Rye",
             "status": "Available",
             "peminjaman": "Not borrowed",
@@ -55,6 +61,7 @@ book_data = [
             "description": "A novel by J.D. Salinger, featuring themes of teenage angst."
         },
         {
+            "id": 6,
             "title": "The Hobbit",
             "status": "Available",
             "peminjaman": "Not borrowed",
@@ -69,8 +76,10 @@ ScreenManager:
     HomeScreen:
     DetailScreen:
     HistoryScreen:
+    AdminHomeScreen:
     NewBookScreen:
     EditBookScreen:
+    EditFormScreen:
 
 <LoginScreen>:
     id: login_layout 
@@ -169,6 +178,66 @@ BoxLayout:
     def show_details(self, *args):
         app = MDApp.get_running_app()
         app.show_book_details(self.book_info)
+
+class AdminBookCard(MDCard):
+    book_info = DictProperty({})
+
+    def __init__(self, book_info, **kwargs):
+        super(AdminBookCard, self).__init__(**kwargs)
+        self.book_info = book_info
+
+        self.orientation = "vertical"
+        self.size_hint = (None, None)
+        self.size = ("300dp", "200dp")
+
+        button = Button(text="Edit", size_hint_y=None, height="40dp")
+        button.bind(on_release=self.edit_book)
+
+        self.add_widget(
+            Builder.load_string(
+                f'''
+BoxLayout:
+    orientation: "vertical"
+    padding: "8dp"
+    spacing: "8dp"
+
+    MDLabel:
+        text: "{book_info['title']}"
+        halign: "center"
+        font_style: "H6"
+
+    MDLabel:
+        text: "Status: {book_info['status']}"
+        theme_text_color: "Secondary"
+
+    MDLabel:
+        text: "Peminjaman: {book_info['peminjaman']}"
+        theme_text_color: "Secondary"
+
+    MDLabel:
+        text: "Author: {book_info['author']}"
+        theme_text_color: "Secondary"
+
+    MDLabel:
+        text: "{book_info['description']}"
+        theme_text_color: "Secondary"
+        text_size: self.width, None
+        size_hint_y: None
+        height: self.texture_size[1]
+'''
+            )
+        )
+        self.add_widget(button)
+
+    def edit_book(self, *args):
+        app = MDApp.get_running_app()
+        edit_book_screen = app.root.get_screen("editBook")
+
+        # Set the book_info for the EditBookScreen
+        edit_book_screen.set_book_info(self.book_info)
+
+        app.root.current = "editBook"
+
 
 class LoginScreen(Screen):
     def __init__(self, **kwargs):
@@ -394,10 +463,6 @@ class AdminHomeScreen(Screen):
         scroll.add_widget(self.book_grid)
 
         self.admin_home_layout.add_widget(scroll)
-        self.add_widget(self.admin_home_layout)
-
-        for book in book_data:
-            self.add_book_to_grid(book)
 
         bottom_nav = MDBottomNavigation()
         home_nav_item = MDBottomNavigationItem(name='home_page', text='Home', icon='home')
@@ -407,7 +472,12 @@ class AdminHomeScreen(Screen):
         bottom_nav.add_widget(home_nav_item)
         bottom_nav.add_widget(logout_nav_item)
         self.admin_home_layout.add_widget(bottom_nav)
-        
+
+        self.add_widget(self.admin_home_layout)
+
+        for book in book_data:
+            self.add_book_to_grid(book)
+
     def on_enter(self, *args):
         admin_home_screen = self.manager.get_screen('admin_home')
         admin_home_screen.clear_book_grid()
@@ -427,7 +497,7 @@ class AdminHomeScreen(Screen):
         self.book_grid.clear_widgets()
 
     def add_book_to_grid(self, book_info):
-        self.book_grid.add_widget(BookCard(book_info))
+        self.book_grid.add_widget(AdminBookCard(book_info))
 
 class NewBookScreen(Screen):
     def __init__(self, **kwargs):
@@ -451,13 +521,20 @@ class NewBookScreen(Screen):
         author = self.new_book_layout.children[2].text
         description = self.new_book_layout.children[1].text
 
+        # Generate the new book's ID by incrementing the last book's ID
+        new_book_id = book_data[-1]['id'] + 1 if book_data else 1  # If book_data is empty, start with ID 1
+
         new_book = {
+            "id": new_book_id,
             "title": title,
             "status": "Available",
             "peminjaman": "Not borrowed",
             "author": author,
             "description": description
         }
+
+        # Add the new book to the book data
+        book_data.append(new_book)
 
         # Clear existing book data in AdminHomeScreen
         admin_home_screen = self.manager.get_screen('admin_home')
@@ -470,13 +547,113 @@ class NewBookScreen(Screen):
         home_screen.clear_book_grid()
         for book in book_data:
             home_screen.add_book_to_grid(book)
-
-        book_data.append(new_book)
+        
+        self.new_book_layout.children[3].text = ""
+        self.new_book_layout.children[2].text = ""
+        self.new_book_layout.children[1].text = ""
 
         self.manager.current = 'admin_home'
 
 class EditBookScreen(Screen):
-    pass
+    def __init__(self, **kwargs):
+        super(EditBookScreen, self).__init__(**kwargs)
+        self.edit_layout = MDBoxLayout(orientation='vertical', spacing=10)
+        self.book_info = {}  # Initialize an empty book_info dictionary
+
+        # Create and populate the fields with the book information
+        self.title_field = MDTextField(hint_text="Title")
+        self.author_field = MDTextField(hint_text="Author")
+        self.description_field = MDTextField(hint_text="Description")
+        self.status_field = MDTextField(hint_text="Status")
+        self.peminjaman_field = MDTextField(hint_text="Peminjaman")
+        delete_button = MDFlatButton(text="Delete", on_release=self.show_delete_confirmation)
+        save_button = MDFlatButton(text="Save", on_release=self.save_changes)
+
+        self.edit_layout.add_widget(self.title_field)
+        self.edit_layout.add_widget(self.author_field)
+        self.edit_layout.add_widget(self.description_field)
+        self.edit_layout.add_widget(self.status_field)
+        self.edit_layout.add_widget(self.peminjaman_field)
+        self.edit_layout.add_widget(save_button)
+        self.edit_layout.add_widget(delete_button)
+
+        self.add_widget(self.edit_layout)
+    
+    def save_changes(self, instance):
+        app = MDApp.get_running_app()
+
+        
+        new_title = self.title_field.text
+        new_author = self.author_field.text
+        new_description = self.description_field.text
+        new_status = self.status_field.text
+        new_peminjaman = self.peminjaman_field.text
+
+        # Update the book_info dictionary with the new information
+        self.book_info['title'] = new_title
+        self.book_info['author'] = new_author
+        self.book_info['description'] = new_description
+        self.book_info['status'] = new_status
+        self.book_info['peminjaman'] = new_peminjaman
+
+        for i, book in enumerate(book_data):
+            if book['id'] == self.book_info['id']:
+                book_data[i] = self.book_info
+                break
+
+        # Clear the existing book grid in AdminHomeScreen
+        admin_home_screen = app.root.get_screen("admin_home")
+        home_screen = app.root.get_screen("home")
+        admin_home_screen.clear_book_grid()
+        home_screen.clear_book_grid()
+
+        # Refresh the AdminHomeScreen with the updated book data
+        for book in book_data:
+            home_screen.add_book_to_grid(book)
+            admin_home_screen.add_book_to_grid(book)
+
+        app.root.current = "admin_home"
+    
+    def set_book_info(self, book_info):
+        # Update the book_info dictionary with the passed book_info
+        self.book_info = book_info
+
+        # Set the text of fields with the book information
+        self.title_field.text = self.book_info.get('title', '')
+        self.author_field.text = self.book_info.get('author', '')
+        self.description_field.text = self.book_info.get('description', '')
+        self.status_field.text = self.book_info.get('status', '')
+        self.peminjaman_field.text = self.book_info.get('peminjaman', '')
+
+    def show_delete_confirmation(self, instance):
+        dialog = MDDialog(
+            text="Are you sure you want to delete this book?",
+            buttons=[
+                MDFlatButton(text="Cancel", on_release=self.close_dialog),
+                MDFlatButton(text="Delete", on_release=self.delete_book)
+            ],
+        )
+        dialog.open()
+
+    def close_dialog(self, instance):
+        instance.parent.parent.dismiss()
+
+    def delete_book(self, instance):
+        app = MDApp.get_running_app()
+        app.root.get_screen("admin_home").clear_book_grid()
+        app.root.get_screen("home").clear_book_grid()
+
+        for book in book_data:
+            if book == self.book_info:
+                book_data.remove(book)
+                break
+        
+        for book in book_data:
+            app.root.get_screen("admin_home").add_book_to_grid(book)
+            app.root.get_screen("home").add_book_to_grid(book)
+        
+        self.manager.current = "admin_home"
+    
 
 class ePustaka(MDApp):
     def build(self):
