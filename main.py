@@ -356,6 +356,7 @@ class DetailScreen(Screen):
         self.manager.current = 'home' 
 
     def borrow_or_return_book(self, instance, book_info):
+        history_screen = self.manager.get_screen("history")
         if book_info['status'] == 'Available':
             book_info['status'] = 'Unavailable'
             book_info['peminjaman'] = 'Borrowed'
@@ -368,6 +369,7 @@ class DetailScreen(Screen):
             instance.text = 'Borrow'  
             self.update_book_status(book_info['title'], 'Available', 'Returned')
             self.show_book_details(book_info)
+            history_screen.history_grid.clear_widgets()
 
     def update_book_status(self, book_title, new_status, new_peminjaman):
         app = MDApp.get_running_app()
@@ -433,6 +435,9 @@ class HistoryScreen(Screen):
     
     def logout(self, instance):
         self.manager.current = 'login'
+    
+    def clear_history_grid(self):
+        self.history_grid.clear_widgets()
 
     def show_returned_books(self):
         self.history_grid.clear_widgets() 
@@ -558,7 +563,9 @@ class EditBookScreen(Screen):
     def __init__(self, **kwargs):
         super(EditBookScreen, self).__init__(**kwargs)
         self.edit_layout = MDBoxLayout(orientation='vertical', spacing=10)
-        self.book_info = {}  # Initialize an empty book_info dictionary
+        self.book_info = {}
+        
+        self.dialog = None
 
         # Create and populate the fields with the book information
         self.title_field = MDTextField(hint_text="Title")
@@ -589,7 +596,6 @@ class EditBookScreen(Screen):
         new_status = self.status_field.text
         new_peminjaman = self.peminjaman_field.text
 
-        # Update the book_info dictionary with the new information
         self.book_info['title'] = new_title
         self.book_info['author'] = new_author
         self.book_info['description'] = new_description
@@ -601,13 +607,11 @@ class EditBookScreen(Screen):
                 book_data[i] = self.book_info
                 break
 
-        # Clear the existing book grid in AdminHomeScreen
         admin_home_screen = app.root.get_screen("admin_home")
         home_screen = app.root.get_screen("home")
         admin_home_screen.clear_book_grid()
         home_screen.clear_book_grid()
 
-        # Refresh the AdminHomeScreen with the updated book data
         for book in book_data:
             home_screen.add_book_to_grid(book)
             admin_home_screen.add_book_to_grid(book)
@@ -615,10 +619,8 @@ class EditBookScreen(Screen):
         app.root.current = "admin_home"
     
     def set_book_info(self, book_info):
-        # Update the book_info dictionary with the passed book_info
         self.book_info = book_info
 
-        # Set the text of fields with the book information
         self.title_field.text = self.book_info.get('title', '')
         self.author_field.text = self.book_info.get('author', '')
         self.description_field.text = self.book_info.get('description', '')
@@ -626,17 +628,17 @@ class EditBookScreen(Screen):
         self.peminjaman_field.text = self.book_info.get('peminjaman', '')
 
     def show_delete_confirmation(self, instance):
-        dialog = MDDialog(
+        self.dialog = MDDialog(
             text="Are you sure you want to delete this book?",
             buttons=[
                 MDFlatButton(text="Cancel", on_release=self.close_dialog),
                 MDFlatButton(text="Delete", on_release=self.delete_book)
             ],
         )
-        dialog.open()
+        self.dialog.open()
 
     def close_dialog(self, instance):
-        instance.parent.parent.dismiss()
+        self.dialog.dismiss()
 
     def delete_book(self, instance):
         app = MDApp.get_running_app()
@@ -652,6 +654,8 @@ class EditBookScreen(Screen):
             app.root.get_screen("admin_home").add_book_to_grid(book)
             app.root.get_screen("home").add_book_to_grid(book)
         
+        if self.dialog:
+            self.dialog.dismiss()
         self.manager.current = "admin_home"
     
 
