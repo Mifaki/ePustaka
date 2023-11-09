@@ -10,6 +10,7 @@ from kivy.core.window import Window
 from kivymd.uix.textfield import MDTextField
 from kivymd.uix.button import MDIconButton
 from kivymd.uix.label import MDLabel
+from kivymd.uix.button import MDFlatButton
 from kivymd.uix.bottomnavigation import MDBottomNavigation, MDBottomNavigationItem
 from kivy.uix.button import Button
 from kivy.uix.label import Label
@@ -64,9 +65,19 @@ book_data = [
 
 screen = '''
 ScreenManager:
+    LoginScreen:
     HomeScreen:
     DetailScreen:
     HistoryScreen:
+    NewBookScreen:
+    EditBookScreen:
+
+<LoginScreen>:
+    id: login_layout 
+    name: 'login'
+    MDBoxLayout:
+        orientation: 'vertical'
+        spacing: 0
 
 <HomeScreen>:
     id: home_layout 
@@ -85,6 +96,20 @@ ScreenManager:
 <HistoryScreen>:
     id: history_layout  
     name: 'history'
+    MDBoxLayout:
+        orientation: 'vertical'
+        spacing: 0
+    
+<NewBookScreen>:
+    id: newBook_layout  
+    name: 'newBook'
+    MDBoxLayout:
+        orientation: 'vertical'
+        spacing: 0
+
+<EditBookScreen>:
+    id: editBook_layout  
+    name: 'editBook'
     MDBoxLayout:
         orientation: 'vertical'
         spacing: 0
@@ -145,7 +170,29 @@ BoxLayout:
         app = MDApp.get_running_app()
         app.show_book_details(self.book_info)
 
+class LoginScreen(Screen):
+    def __init__(self, **kwargs):
+        super(LoginScreen, self).__init__(**kwargs)
+        self.login_layout = MDBoxLayout(orientation='vertical', spacing=20)
 
+        label = MDLabel(text="ePustaka", halign='center', font_style="H3")
+        self.login_layout.add_widget(label)
+
+        user_button = MDFlatButton(text="Login as User")
+        user_button.bind(on_release=lambda instance: self.switch_to_screen("User"))
+        self.login_layout.add_widget(user_button)
+
+        admin_button = MDFlatButton(text="Login as Admin")
+        admin_button.bind(on_release=lambda instance: self.switch_to_screen("Admin"))
+        self.login_layout.add_widget(admin_button)
+
+        self.add_widget(self.login_layout)
+
+    def switch_to_screen(self, role):
+        if role == 'User':
+            self.manager.current = 'home' 
+        elif role == 'Admin':
+            self.manager.current = 'admin_home'
 
 class HomeScreen(Screen):
     def __init__(self, **kwargs):
@@ -173,13 +220,19 @@ class HomeScreen(Screen):
         bottom_nav = MDBottomNavigation()
         home_nav_item = MDBottomNavigationItem(name='home_page', text='Home', icon='home')
         history_nav_item = MDBottomNavigationItem(name='history_page', text='History', icon='history')
+        logout_nav_item = MDBottomNavigationItem(name='logout', text='Logout', icon='logout')
         history_nav_item.bind(on_tab_press=self.switch_to_history_screen) 
+        logout_nav_item.bind(on_tab_press=self.logout) 
         bottom_nav.add_widget(home_nav_item)
         bottom_nav.add_widget(history_nav_item)
+        bottom_nav.add_widget(logout_nav_item)
         self.home_layout.add_widget(bottom_nav)
 
     def switch_to_history_screen(self, instance):
         self.manager.current = 'history'
+
+    def logout(self, instance):
+        self.manager.current = 'login'
 
     def clear_book_grid(self):
         self.book_grid.clear_widgets()
@@ -237,7 +290,7 @@ class DetailScreen(Screen):
         if book_info['status'] == 'Available':
             book_info['status'] = 'Unavailable'
             book_info['peminjaman'] = 'Borrowed'
-            instance.text = 'Return'  # Change the button text to "Return"
+            instance.text = 'Return' 
             self.update_book_status(book_info['title'], 'Unavailable', 'Borrowed')
             self.show_book_details(book_info)
         elif book_info['status'] == 'Unavailable' and book_info['peminjaman'] == 'Borrowed':
@@ -292,17 +345,25 @@ class HistoryScreen(Screen):
 
         bottom_nav = MDBottomNavigation()
         home_nav_item = MDBottomNavigationItem(name='home_page', text='Home', icon='home')
-        home_nav_item.bind(on_tab_press=self.switch_to_home_screen)
         history_nav_item = MDBottomNavigationItem(name='history_page', text='History', icon='history')
+        logout_nav_item = MDBottomNavigationItem(name='logout', text='Logout', icon='logout')
+        home_nav_item.bind(on_tab_press=self.switch_to_home_screen) 
+        logout_nav_item.bind(on_tab_press=self.logout) 
         bottom_nav.add_widget(home_nav_item)
         bottom_nav.add_widget(history_nav_item)
-
+        bottom_nav.add_widget(logout_nav_item)
         self.history_layout.add_widget(bottom_nav)
 
         self.add_widget(self.history_layout)
 
     def on_enter(self, *args):
         self.show_returned_books()
+    
+    def switch_to_home_screen(self, instance):
+        self.manager.current = 'home'
+    
+    def logout(self, instance):
+        self.manager.current = 'login'
 
     def show_returned_books(self):
         self.history_grid.clear_widgets() 
@@ -319,9 +380,103 @@ class HistoryScreen(Screen):
         returned_books = [book for book in book_data if book['peminjaman'] == 'Returned']
         return returned_books
 
+class AdminHomeScreen(Screen):
+    def __init__(self, **kwargs):
+        super(AdminHomeScreen, self).__init__(**kwargs)
+        self.admin_home_layout = MDBoxLayout(orientation='vertical', spacing=0)
+
+        add_book_button = MDFlatButton(text="Add New Book", on_release=self.go_to_new_book)
+        self.admin_home_layout.add_widget(add_book_button)
+
+        scroll = ScrollView(size_hint_y=None, height=Window.height, do_scroll_y=True, do_scroll_x=False)
+        self.book_grid = GridLayout(cols=1, spacing=8, size_hint=(None, None), size=(Window.width, 0))
+        self.book_grid.bind(minimum_height=self.book_grid.setter('height'))
+        scroll.add_widget(self.book_grid)
+
+        self.admin_home_layout.add_widget(scroll)
+        self.add_widget(self.admin_home_layout)
+
+        for book in book_data:
+            self.add_book_to_grid(book)
+
+        bottom_nav = MDBottomNavigation()
+        home_nav_item = MDBottomNavigationItem(name='home_page', text='Home', icon='home')
+        logout_nav_item = MDBottomNavigationItem(name='logout', text='Logout', icon='logout')
+        home_nav_item.bind(on_tab_press=self.switch_to_home_screen)
+        logout_nav_item.bind(on_tab_press=self.logout)
+        bottom_nav.add_widget(home_nav_item)
+        bottom_nav.add_widget(logout_nav_item)
+        self.admin_home_layout.add_widget(bottom_nav)
+        
+    def on_enter(self, *args):
+        admin_home_screen = self.manager.get_screen('admin_home')
+        admin_home_screen.clear_book_grid()
+        for book in book_data:
+            admin_home_screen.add_book_to_grid(book)
+
     def switch_to_home_screen(self, instance):
         self.manager.current = 'home'
+    
+    def go_to_new_book(self, instance):
+        self.manager.current = 'newBook'
 
+    def logout(self, instance):
+        self.manager.current = 'login'
+
+    def clear_book_grid(self):
+        self.book_grid.clear_widgets()
+
+    def add_book_to_grid(self, book_info):
+        self.book_grid.add_widget(BookCard(book_info))
+
+class NewBookScreen(Screen):
+    def __init__(self, **kwargs):
+        super(NewBookScreen, self).__init__(**kwargs)
+        self.new_book_layout = MDBoxLayout(orientation='vertical', spacing=10)
+
+        title_field = MDTextField(hint_text="Title")
+        author_field = MDTextField(hint_text="Author")
+        description_field = MDTextField(hint_text="Description")
+        save_button = MDFlatButton(text="Save", on_release=self.add_new_book)
+
+        self.new_book_layout.add_widget(title_field)
+        self.new_book_layout.add_widget(author_field)
+        self.new_book_layout.add_widget(description_field)
+        self.new_book_layout.add_widget(save_button)
+
+        self.add_widget(self.new_book_layout)
+
+    def add_new_book(self, instance):
+        title = self.new_book_layout.children[3].text
+        author = self.new_book_layout.children[2].text
+        description = self.new_book_layout.children[1].text
+
+        new_book = {
+            "title": title,
+            "status": "Available",
+            "peminjaman": "Not borrowed",
+            "author": author,
+            "description": description
+        }
+
+        # Clear existing book data in AdminHomeScreen
+        admin_home_screen = self.manager.get_screen('admin_home')
+        admin_home_screen.clear_book_grid()
+        for book in book_data:
+            admin_home_screen.add_book_to_grid(book)
+
+        # Clear existing book data in HomeScreen
+        home_screen = self.manager.get_screen('home')
+        home_screen.clear_book_grid()
+        for book in book_data:
+            home_screen.add_book_to_grid(book)
+
+        book_data.append(new_book)
+
+        self.manager.current = 'admin_home'
+
+class EditBookScreen(Screen):
+    pass
 
 class ePustaka(MDApp):
     def build(self):
@@ -329,14 +484,21 @@ class ePustaka(MDApp):
 
         self.screen_manager = ScreenManager()
 
+        self.login_screen = LoginScreen(name="login")
         home_screen = HomeScreen(name="home")
+        admin_home_screen = AdminHomeScreen(name="admin_home") 
 
         for book in book_data:
             home_screen.add_book_to_grid(book)
+            admin_home_screen.add_book_to_grid(book) 
 
+        self.screen_manager.add_widget(self.login_screen)
         self.screen_manager.add_widget(home_screen)
+        self.screen_manager.add_widget(admin_home_screen)
         self.screen_manager.add_widget(DetailScreen(name="detail"))
         self.screen_manager.add_widget(HistoryScreen(name="history"))
+        self.screen_manager.add_widget(NewBookScreen(name="newBook"))
+        self.screen_manager.add_widget(EditBookScreen(name="editBook"))
 
         return self.screen_manager
 
