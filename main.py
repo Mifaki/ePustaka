@@ -1,4 +1,5 @@
 from kivy.lang import Builder
+from kivy.metrics import dp
 from kivy.properties import DictProperty
 from kivymd.app import MDApp
 from kivymd.uix.card import MDCard
@@ -10,7 +11,7 @@ from kivy.core.window import Window
 from kivymd.uix.textfield import MDTextField
 from kivymd.uix.button import MDIconButton
 from kivymd.uix.label import MDLabel
-from kivymd.uix.button import MDFlatButton, MDFillRoundFlatButton
+from kivymd.uix.button import MDFlatButton, MDFillRoundFlatButton, MDRaisedButton, MDRectangleFlatButton
 from kivymd.uix.dialog import MDDialog
 from kivymd.uix.bottomnavigation import MDBottomNavigation, MDBottomNavigationItem
 from kivy.uix.button import Button
@@ -134,31 +135,50 @@ class BookCard(MDCard):
 
         self.orientation = "vertical"
         self.size_hint = (None, None)
-        self.size = ("300dp", "200dp")
+        self.size = ("400dp", "200dp")
 
-        button = Button(text="View Details", size_hint_y=None, height="40dp")
+        button_container = MDBoxLayout(orientation='vertical',adaptive_size=True, padding=10)
+        button = MDRectangleFlatButton(
+            text="View Details",
+            size_hint_y=None,
+            height="42dp",
+            width=self.width,
+            md_bg_color="blue",
+            text_color="white",
+        )
         button.bind(on_release=self.show_details)
+        button_container.add_widget(button)
+        button_container.pos_hint = { 'center_x': 0.5}
 
         self.add_widget(
             Builder.load_string(
                 f'''
 BoxLayout:
     orientation: "vertical"
-    padding: "8dp"
+    padding: "20dp"
     spacing: "8dp"
 
     MDLabel:
         text: "{book_info['title']}"
         halign: "center"
         font_style: "H6"
-
+    
     MDLabel:
-        text: "Status: {book_info['status']}"
-        theme_text_color: "Secondary"
-
     MDLabel:
-        text: "Peminjaman: {book_info['peminjaman']}"
-        theme_text_color: "Secondary"
+    
+    MDBoxLayout:
+        orientation: "horizontal"
+        width: "{Window.width}"
+
+        MDLabel:
+            text: "{book_info['status']}"
+            theme_text_color: "Secondary"
+
+        MDLabel:
+            text: "{book_info['peminjaman']}"
+            theme_text_color: "Secondary"
+    
+    MDLabel:
 
     MDLabel:
         text: "Author: {book_info['author']}"
@@ -173,7 +193,7 @@ BoxLayout:
 '''
             )
         )
-        self.add_widget(button)
+        self.add_widget(button_container)
 
     def show_details(self, *args):
         app = MDApp.get_running_app()
@@ -251,9 +271,9 @@ class LoginScreen(Screen):
         button_layout = MDBoxLayout(orientation='vertical', spacing=20, adaptive_width=True, adaptive_height=True, padding=50)
         button_layout.bind(minimum_width=button_layout.setter('width'))
 
-        user_button = MDFillRoundFlatButton(text="Login as User", text_color="white", height=50, width=80)
+        user_button = MDFillRoundFlatButton(text="Login as User", text_color="white", size_hint_y=None, height=50, width=80)
         user_button.bind(on_release=lambda instance: self.switch_to_screen("User"))
-        admin_button = MDFillRoundFlatButton(text="Login as Admin", text_color="white", height=50, width=80)
+        admin_button = MDFillRoundFlatButton(text="Login as Admin", text_color="white", size_hint_y=None, height=50, width=80)
         admin_button.bind(on_release=lambda instance: self.switch_to_screen("Admin"))
 
         main_layout.add_widget(label)
@@ -279,14 +299,21 @@ class LoginScreen(Screen):
 class HomeScreen(Screen):
     def __init__(self, **kwargs):
         super(HomeScreen, self).__init__(**kwargs)
-        self.home_layout = MDBoxLayout(orientation='vertical', spacing=0)
+        self.home_layout = MDBoxLayout(orientation='vertical', spacing=0, padding=10)
 
-        self.search_bar = MDTextField(id='search_bar', mode='rectangle', hint_text='Search')
+        search_bar = MDBoxLayout(
+            orientation="horizontal",
+            spacing=10,
+            padding=10,
+            adaptive_height=True
+        )
+        self.search_textfield = MDTextField(id='search_bar', mode='rectangle', hint_text='Search')
         search_button = MDIconButton(icon="magnify")
         search_button.bind(on_release=self.trigger_search)
 
-        self.home_layout.add_widget(self.search_bar)
-        self.home_layout.add_widget(search_button)
+        search_bar.add_widget(self.search_textfield)
+        search_bar.add_widget(search_button)
+        self.home_layout.add_widget(search_bar)
 
         scroll = ScrollView(size_hint_y=None, height=Window.height, do_scroll_y=True, do_scroll_x=False)
         self.book_grid = GridLayout(cols=1, spacing=8, size_hint=(None, None), size=(Window.width, 0))
@@ -329,7 +356,7 @@ class HomeScreen(Screen):
                 self.add_book_to_grid(book)
 
     def trigger_search(self, instance):
-        self.on_search(self.search_bar, self.search_bar.text)
+        self.on_search(self.search_textfield, self.search_textfield.text)
     
     def refresh_home_screen(self, book_title, new_status, new_peminjaman):
         for book in book_data:
