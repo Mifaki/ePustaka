@@ -10,7 +10,7 @@ from kivy.core.window import Window
 from kivymd.uix.textfield import MDTextField
 from kivymd.uix.button import MDIconButton
 from kivymd.uix.label import MDLabel
-from kivymd.uix.button import MDFlatButton
+from kivymd.uix.button import MDFlatButton, MDFillRoundFlatButton
 from kivymd.uix.dialog import MDDialog
 from kivymd.uix.bottomnavigation import MDBottomNavigation, MDBottomNavigationItem
 from kivy.uix.button import Button
@@ -242,26 +242,39 @@ BoxLayout:
 class LoginScreen(Screen):
     def __init__(self, **kwargs):
         super(LoginScreen, self).__init__(**kwargs)
-        self.login_layout = MDBoxLayout(orientation='vertical', spacing=20)
+
+        main_layout = MDBoxLayout(orientation='vertical', spacing=20, adaptive_height=True)
+        main_layout.bind(minimum_height=main_layout.setter('height'))
 
         label = MDLabel(text="ePustaka", halign='center', font_style="H3")
-        self.login_layout.add_widget(label)
 
-        user_button = MDFlatButton(text="Login as User")
+        button_layout = MDBoxLayout(orientation='vertical', spacing=20, adaptive_width=True, adaptive_height=True, padding=50)
+        button_layout.bind(minimum_width=button_layout.setter('width'))
+
+        user_button = MDFillRoundFlatButton(text="Login as User", text_color="white", height=50, width=80)
         user_button.bind(on_release=lambda instance: self.switch_to_screen("User"))
-        self.login_layout.add_widget(user_button)
-
-        admin_button = MDFlatButton(text="Login as Admin")
+        admin_button = MDFillRoundFlatButton(text="Login as Admin", text_color="white", height=50, width=80)
         admin_button.bind(on_release=lambda instance: self.switch_to_screen("Admin"))
-        self.login_layout.add_widget(admin_button)
 
-        self.add_widget(self.login_layout)
+        main_layout.add_widget(label)
+
+        button_layout.add_widget(user_button)
+        button_layout.add_widget(admin_button)
+
+        button_layout.pos_hint = {'center_x': 0.5, 'center_y': 0.9}
+        
+        main_layout.add_widget(button_layout)
+
+        main_layout.pos_hint = {'center_y': 0.5, 'center_x': 0.5}
+
+        self.add_widget(main_layout)
 
     def switch_to_screen(self, role):
         if role == 'User':
             self.manager.current = 'home' 
         elif role == 'Admin':
             self.manager.current = 'admin_home'
+
 
 class HomeScreen(Screen):
     def __init__(self, **kwargs):
