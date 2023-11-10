@@ -12,7 +12,7 @@ from kivy.core.window import Window
 from kivymd.uix.textfield import MDTextField
 from kivymd.uix.button import MDIconButton
 from kivymd.uix.label import MDLabel
-from kivymd.uix.button import MDFlatButton, MDFillRoundFlatButton, MDRaisedButton, MDRectangleFlatButton
+from kivymd.uix.button import MDFlatButton, MDFillRoundFlatButton, MDRectangleFlatButton, MDFloatingActionButton
 from kivymd.uix.dialog import MDDialog
 from kivymd.uix.bottomnavigation import MDBottomNavigation, MDBottomNavigationItem
 from kivy.uix.button import Button
@@ -212,38 +212,59 @@ class AdminBookCard(MDCard):
 
         self.orientation = "vertical"
         self.size_hint = (None, None)
-        self.size = ("300dp", "200dp")
+        self.size = ("400dp", "200dp")
 
-        button = Button(text="Edit", size_hint_y=None, height="40dp")
+        button_container = MDBoxLayout(orientation='vertical',adaptive_size=True, padding=10)
+        button = MDRectangleFlatButton(
+            text="Edit Book Details",
+            size_hint_y=None,
+            height="42dp",
+            width=self.width,
+            md_bg_color="blue",
+            text_color="white",
+        )
         button.bind(on_release=self.edit_book)
+        button_container.add_widget(button)
+        button_container.pos_hint = { 'center_x': 0.5}
+
+        short_desc = book_info['description'][:50]
 
         self.add_widget(
             Builder.load_string(
                 f'''
 BoxLayout:
     orientation: "vertical"
-    padding: "8dp"
+    padding: "20dp"
     spacing: "8dp"
 
     MDLabel:
         text: "{book_info['title']}"
         halign: "center"
         font_style: "H6"
-
+    
     MDLabel:
-        text: "Status: {book_info['status']}"
-        theme_text_color: "Secondary"
-
     MDLabel:
-        text: "Peminjaman: {book_info['peminjaman']}"
-        theme_text_color: "Secondary"
+    
+    MDBoxLayout:
+        orientation: "horizontal"
+        width: "{Window.width}"
+
+        MDLabel:
+            text: "{book_info['status']}"
+            theme_text_color: "Secondary"
+
+        MDLabel:
+            text: "{book_info['peminjaman']}"
+            theme_text_color: "Secondary"
+    
+    MDLabel:
 
     MDLabel:
         text: "Author: {book_info['author']}"
         theme_text_color: "Secondary"
 
     MDLabel:
-        text: "{book_info['description']}"
+        text: "{short_desc}"
         theme_text_color: "Secondary"
         text_size: self.width, None
         size_hint_y: None
@@ -251,13 +272,11 @@ BoxLayout:
 '''
             )
         )
-        self.add_widget(button)
+        self.add_widget(button_container)
 
     def edit_book(self, *args):
         app = MDApp.get_running_app()
         edit_book_screen = app.root.get_screen("editBook")
-
-        # Set the book_info for the EditBookScreen
         edit_book_screen.set_book_info(self.book_info)
 
         app.root.current = "editBook"
@@ -508,17 +527,19 @@ class HistoryScreen(Screen):
 class AdminHomeScreen(Screen):
     def __init__(self, **kwargs):
         super(AdminHomeScreen, self).__init__(**kwargs)
-        self.admin_home_layout = MDBoxLayout(orientation='vertical', spacing=0)
+        self.admin_home_layout = MDBoxLayout(orientation='vertical', spacing=0, padding=10)
 
-        add_book_button = MDFlatButton(text="Add New Book", on_release=self.go_to_new_book)
-        self.admin_home_layout.add_widget(add_book_button)
 
-        scroll = ScrollView(size_hint_y=None, height=Window.height, do_scroll_y=True, do_scroll_x=False)
+        scroll = ScrollView(size_hint_y=None, height=Window.height + 42, do_scroll_y=True, do_scroll_x=False)
         self.book_grid = GridLayout(cols=1, spacing=8, size_hint=(None, None), size=(Window.width, 0))
         self.book_grid.bind(minimum_height=self.book_grid.setter('height'))
         scroll.add_widget(self.book_grid)
 
         self.admin_home_layout.add_widget(scroll)
+
+        add_book_button = MDFloatingActionButton(icon="plus", on_release=self.go_to_new_book, padding=5)
+        add_book_button.pos_hint = { 'right': 1.0, 'y':0.3 }
+        self.admin_home_layout.add_widget(add_book_button)
 
         bottom_nav = MDBottomNavigation()
         home_nav_item = MDBottomNavigationItem(name='home_page', text='Home', icon='home')
@@ -577,8 +598,7 @@ class NewBookScreen(Screen):
         author = self.new_book_layout.children[2].text
         description = self.new_book_layout.children[1].text
 
-        # Generate the new book's ID by incrementing the last book's ID
-        new_book_id = book_data[-1]['id'] + 1 if book_data else 1  # If book_data is empty, start with ID 1
+        new_book_id = book_data[-1]['id'] + 1 if book_data else 1 
 
         new_book = {
             "id": new_book_id,
@@ -589,16 +609,13 @@ class NewBookScreen(Screen):
             "description": description
         }
 
-        # Add the new book to the book data
         book_data.append(new_book)
 
-        # Clear existing book data in AdminHomeScreen
         admin_home_screen = self.manager.get_screen('admin_home')
         admin_home_screen.clear_book_grid()
         for book in book_data:
             admin_home_screen.add_book_to_grid(book)
 
-        # Clear existing book data in HomeScreen
         home_screen = self.manager.get_screen('home')
         home_screen.clear_book_grid()
         for book in book_data:
@@ -618,7 +635,6 @@ class EditBookScreen(Screen):
         
         self.dialog = None
 
-        # Create and populate the fields with the book information
         self.title_field = MDTextField(hint_text="Title")
         self.author_field = MDTextField(hint_text="Author")
         self.description_field = MDTextField(hint_text="Description")
