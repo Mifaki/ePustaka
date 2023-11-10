@@ -12,7 +12,7 @@ from kivy.core.window import Window
 from kivymd.uix.textfield import MDTextField
 from kivymd.uix.button import MDIconButton
 from kivymd.uix.label import MDLabel
-from kivymd.uix.button import MDFlatButton, MDFillRoundFlatButton, MDRectangleFlatButton, MDFloatingActionButton
+from kivymd.uix.button import MDFlatButton, MDFillRoundFlatButton, MDRectangleFlatButton, MDFloatingActionButton, MDIconButton
 from kivymd.uix.dialog import MDDialog
 from kivymd.uix.bottomnavigation import MDBottomNavigation, MDBottomNavigationItem
 from kivy.uix.button import Button
@@ -177,6 +177,8 @@ BoxLayout:
         MDLabel:
             text: "{book_info['status']}"
             theme_text_color: "Secondary"
+        
+        MDLabel:
 
         MDLabel:
             text: "{book_info['peminjaman']}"
@@ -252,6 +254,8 @@ BoxLayout:
         MDLabel:
             text: "{book_info['status']}"
             theme_text_color: "Secondary"
+
+        MDLabel:
 
         MDLabel:
             text: "{book_info['peminjaman']}"
@@ -630,33 +634,47 @@ class NewBookScreen(Screen):
 class EditBookScreen(Screen):
     def __init__(self, **kwargs):
         super(EditBookScreen, self).__init__(**kwargs)
-        self.edit_layout = MDBoxLayout(orientation='vertical', spacing=10)
+        self.edit_layout = MDBoxLayout(orientation='vertical', adaptive_height=True, width=Window.width, padding=15)
+        self.edit_layout.pos_hint = {'top': 1}
         self.book_info = {}
-        
+
         self.dialog = None
+
+        top_icon_layout = MDBoxLayout(orientation='horizontal', spacing=10, adaptive_height=True)
+        back_button = MDIconButton(icon='arrow-left', on_release=self.go_back)
+        delete_button = MDIconButton(icon="delete", on_release=self.show_delete_confirmation)
+        top_icon_layout.add_widget(back_button)
+        top_icon_layout.add_widget(Label())
+        top_icon_layout.add_widget(delete_button)
+        top_icon_layout.pos_hint = { 'x': 0, 'y':0.9 }
+        self.edit_layout.add_widget(top_icon_layout)
 
         self.title_field = MDTextField(hint_text="Title")
         self.author_field = MDTextField(hint_text="Author")
         self.description_field = MDTextField(hint_text="Description")
         self.status_field = MDTextField(hint_text="Status")
         self.peminjaman_field = MDTextField(hint_text="Peminjaman")
-        delete_button = MDFlatButton(text="Delete", on_release=self.show_delete_confirmation)
-        save_button = MDFlatButton(text="Save", on_release=self.save_changes)
+        save_button = MDRectangleFlatButton(text="Save", md_bg_color="blue", text_color="white", size_hint=(1, None), height=42, on_release=self.save_changes)
 
         self.edit_layout.add_widget(self.title_field)
         self.edit_layout.add_widget(self.author_field)
         self.edit_layout.add_widget(self.description_field)
         self.edit_layout.add_widget(self.status_field)
         self.edit_layout.add_widget(self.peminjaman_field)
+        self.edit_layout.add_widget(MDLabel())
+        self.edit_layout.add_widget(MDLabel())
+        self.edit_layout.add_widget(MDLabel())
+        self.edit_layout.add_widget(MDLabel())
         self.edit_layout.add_widget(save_button)
-        self.edit_layout.add_widget(delete_button)
 
         self.add_widget(self.edit_layout)
-    
+
+    def go_back(self, instance):
+        self.manager.current = "admin_home"
+
     def save_changes(self, instance):
         app = MDApp.get_running_app()
-
-        
+    
         new_title = self.title_field.text
         new_author = self.author_field.text
         new_description = self.description_field.text
