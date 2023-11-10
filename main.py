@@ -4,6 +4,7 @@ from kivy.properties import DictProperty
 from kivymd.app import MDApp
 from kivymd.uix.card import MDCard
 from kivymd.uix.boxlayout import MDBoxLayout
+from kivymd.uix.floatlayout import MDFloatLayout
 from kivy.uix.scrollview import ScrollView
 from kivy.uix.gridlayout import GridLayout
 from kivy.uix.screenmanager import ScreenManager, Screen
@@ -21,55 +22,56 @@ from functools import partial
 Window.size = (400, 800)
 
 book_data = [
-        {
-            "id": 1,
-            "title": "The Great Gatsby",
-            "status": "Available",
-            "peminjaman": "Not borrowed",
-            "author": "F. Scott Fitzgerald",
-            "description": "A novel written by American author F. Scott Fitzgerald."
-        },
-        {
-            "id": 2,
-            "title": "To Kill a Mockingbird",
-            "status": "Available",
-            "peminjaman": "Not borrowed",
-            "author": "Harper Lee",
-            "description": "A classic novel by Harper Lee dealing with serious issues."
-        },
-        {
-            "id": 3,
-            "title": "1984",
-            "status": "Available",
-            "peminjaman": "Not borrowed",
-            "author": "George Orwell",
-            "description": "A dystopian social science fiction novel by George Orwell."
-        },
-        {
-            "id": 4,
-            "title": "Pride and Prejudice",
-            "status": "Available",
-            "peminjaman": "Not borrowed",
-            "author": "Jane Austen",
-            "description": "A romantic novel by Jane Austen."
-        },
-        {
-            "id": 5,
-            "title": "The Catcher in the Rye",
-            "status": "Available",
-            "peminjaman": "Not borrowed",
-            "author": "J.D. Salinger",
-            "description": "A novel by J.D. Salinger, featuring themes of teenage angst."
-        },
-        {
-            "id": 6,
-            "title": "The Hobbit",
-            "status": "Available",
-            "peminjaman": "Not borrowed",
-            "author": "J.R.R. Tolkien",
-            "description": "A fantasy novel by J.R.R. Tolkien, following the journey of Bilbo Baggins."
-        }
+    {
+        "id": 1,
+        "title": "The Great Gatsby",
+        "status": "Available",
+        "peminjaman": "Not borrowed",
+        "author": "F. Scott Fitzgerald",
+        "description": "Set in 1922, explores Jay Gatsby's life, wealth, love, and the American Dream."
+    },
+    {
+        "id": 2,
+        "title": "To Kill a Mockingbird",
+        "status": "Available",
+        "peminjaman": "Not borrowed",
+        "author": "Harper Lee",
+        "description": "Classic exploring racial injustice and moral growth through Scout Finch and her father, Atticus Finch."
+    },
+    {
+        "id": 3,
+        "title": "1984",
+        "status": "Available",
+        "peminjaman": "Not borrowed",
+        "author": "George Orwell",
+        "description": "Dystopian novel following Winston Smith's rebellion against the Party's totalitarian regime."
+    },
+    {
+        "id": 4,
+        "title": "Pride and Prejudice",
+        "status": "Available",
+        "peminjaman": "Not borrowed",
+        "author": "Jane Austen",
+        "description": "Romantic novel exploring complex relationships and social hierarchy through Elizabeth Bennet and Mr. Darcy."
+    },
+    {
+        "id": 5,
+        "title": "The Catcher in the Rye",
+        "status": "Available",
+        "peminjaman": "Not borrowed",
+        "author": "J.D. Salinger",
+        "description": "Novel featuring teenage angst, following Holden Caulfield's journey through identity, alienation, and loss."
+    },
+    {
+        "id": 6,
+        "title": "The Hobbit",
+        "status": "Available",
+        "peminjaman": "Not borrowed",
+        "author": "J.R.R. Tolkien",
+        "description": "Fantasy novel following Bilbo Baggins on an unexpected adventure with dragons, dwarves, elves, and a magical ring."
+    },
 ]
+
 
 screen = '''
 ScreenManager:
@@ -150,6 +152,8 @@ class BookCard(MDCard):
         button_container.add_widget(button)
         button_container.pos_hint = { 'center_x': 0.5}
 
+        short_desc = book_info['description'][:50]
+
         self.add_widget(
             Builder.load_string(
                 f'''
@@ -185,7 +189,7 @@ BoxLayout:
         theme_text_color: "Secondary"
 
     MDLabel:
-        text: "{book_info['description']}"
+        text: "{short_desc}"
         theme_text_color: "Secondary"
         text_size: self.width, None
         size_hint_y: None
@@ -376,17 +380,17 @@ class HomeScreen(Screen):
 class DetailScreen(Screen):
     def __init__(self, **kwargs):
         super(DetailScreen, self).__init__(**kwargs)
-        self.detail_layout = MDBoxLayout(orientation='vertical', spacing=10)
+        self.detail_layout = MDFloatLayout()
 
         back_button = MDIconButton(icon='arrow-left', on_release=self.go_back)
+        back_button.pos_hint = {'x': 0, 'y': 0.9}
         self.detail_layout.add_widget(back_button)
 
-        scroll_view = ScrollView()
-        self.book_detail_grid = GridLayout(cols=1, spacing=10, size_hint_y=None)
-        self.book_detail_grid.bind(minimum_height=self.book_detail_grid.setter('height'))
-        scroll_view.add_widget(self.book_detail_grid)
+        self.book_detail_layout = MDBoxLayout(orientation='vertical', spacing=20, adaptive_height=True, padding=15)
+        self.book_detail_layout.bind(minimum_height=self.book_detail_layout.setter('height'))
+        self.book_detail_layout.pos_hint = { 'y': 0.5}
 
-        self.detail_layout.add_widget(scroll_view)
+        self.detail_layout.add_widget(self.book_detail_layout)
         self.add_widget(self.detail_layout)
 
     def on_enter(self, *args):
@@ -421,20 +425,27 @@ class DetailScreen(Screen):
                 book['peminjaman'] = new_peminjaman
 
     def show_book_details(self, book_info):
-        self.book_detail_grid.clear_widgets()
+        self.book_detail_layout.clear_widgets()
 
         for key, value in book_info.items():
-            label = MDLabel(text=f"{key.capitalize()}: {value}", size_hint=(1, None), height=40)
-            self.book_detail_grid.add_widget(label)
+            if(key == "id"): continue
+            label = MDLabel(text=f"{key.capitalize()}: {value}", size_hint=(1, None), height=32)
+            self.book_detail_layout.add_widget(label)
 
-        borrow_button = Button(
+        borrow_button = MDRectangleFlatButton(
             text='Borrow' if book_info['status'] == 'Available' else 'Return',
             size_hint=(1, None),
-            height=40
+            height=42,
+            md_bg_color="blue",
+            text_color="white"
         )
 
         borrow_button.bind(on_release=partial(self.borrow_or_return_book, book_info=book_info))
-        self.book_detail_grid.add_widget(borrow_button)
+        self.book_detail_layout.add_widget(Label())
+        self.book_detail_layout.add_widget(Label())
+        self.book_detail_layout.add_widget(Label())
+        self.book_detail_layout.add_widget(Label())
+        self.book_detail_layout.add_widget(borrow_button)
 
         self.manager.current = 'detail'
 
