@@ -566,7 +566,7 @@ class AdminHomeScreen(Screen):
             admin_home_screen.add_book_to_grid(book)
 
     def switch_to_home_screen(self, instance):
-        self.manager.current = 'home'
+        self.manager.current = 'admin_home'
     
     def go_to_new_book(self, instance):
         self.manager.current = 'newBook'
@@ -583,12 +583,16 @@ class AdminHomeScreen(Screen):
 class NewBookScreen(Screen):
     def __init__(self, **kwargs):
         super(NewBookScreen, self).__init__(**kwargs)
-        self.new_book_layout = MDBoxLayout(orientation='vertical', spacing=10)
+        self.new_book_layout = MDBoxLayout(orientation='vertical', spacing=10, adaptive_height=True, padding=10)
+        self.new_book_layout.pos_hint = { 'top': 1 }
+
+        back_button = MDIconButton(icon='arrow-left', on_release=self.go_back)
+        self.new_book_layout.add_widget(back_button)
 
         title_field = MDTextField(hint_text="Title")
         author_field = MDTextField(hint_text="Author")
         description_field = MDTextField(hint_text="Description")
-        save_button = MDFlatButton(text="Save", on_release=self.add_new_book)
+        save_button = MDRectangleFlatButton(text="Save", md_bg_color="blue", text_color="white", size_hint=(1, None), height=42, on_release=self.add_new_book)
 
         self.new_book_layout.add_widget(title_field)
         self.new_book_layout.add_widget(author_field)
@@ -596,6 +600,9 @@ class NewBookScreen(Screen):
         self.new_book_layout.add_widget(save_button)
 
         self.add_widget(self.new_book_layout)
+
+    def go_back(self, instance):
+        self.manager.current = "admin_home"
 
     def add_new_book(self, instance):
         title = self.new_book_layout.children[3].text
