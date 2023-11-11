@@ -13,6 +13,7 @@ python -m pip install --upgrade pip setuptools virtualenv
 python -m virtualenv kivy_venv
 ```
 3. Activate the virtual environment
+
 Windows CMD
 ```shell
 kivy_venv\Scripts\activate
