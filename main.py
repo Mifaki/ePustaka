@@ -514,8 +514,6 @@ class DetailScreen(Screen):
         self.book_detail_layout.pos_hint = {'y': 0.5}
 
         # Menambahkan book_detail_layout ke detail_layout.
-        self.detail_layout.add_widget(Label())
-        self.detail_layout.add_widget(Label())
         self.detail_layout.add_widget(self.book_detail_layout)
         self.add_widget(self.detail_layout)
 
@@ -581,6 +579,7 @@ class DetailScreen(Screen):
     def show_book_details(self, book_info):
         # Menghapus semua widget dari book_detail_layout.
         self.book_detail_layout.clear_widgets()
+        self.book_detail_layout.pos_hint = {'top': 0.9}
 
         # Menambahkan label untuk setiap detail buku ke dalam tata letak.
         for key, value in book_info.items():
