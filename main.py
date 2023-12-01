@@ -32,7 +32,7 @@ from kivymd.uix.bottomnavigation import (
 #Deklarasi ukuran window
 Window.size = (400, 800)
 
-#Data dummy untuk tampilan awal
+# Data dummy untuk tampilan awal
 book_data = [
     {
         "id": 1,
@@ -40,7 +40,8 @@ book_data = [
         "status": "Available",
         "peminjaman": "Not borrowed",
         "author": "F. Scott Fitzgerald",
-        "description": "Set in 1922, explores Jay Gatsby's life, wealth, love, and the American Dream."
+        "description": "Set in 1922, explores Jay Gatsby's life, wealth, love, and the American Dream.",
+        "jumlah": 1,
     },
     {
         "id": 2,
@@ -48,7 +49,8 @@ book_data = [
         "status": "Available",
         "peminjaman": "Not borrowed",
         "author": "Harper Lee",
-        "description": "Classic exploring racial injustice and moral growth through Scout Finch and her father, Atticus Finch."
+        "description": "Classic exploring racial injustice and moral growth through Scout Finch and her father, Atticus Finch.",
+        "jumlah": 2,
     },
     {
         "id": 3,
@@ -56,7 +58,8 @@ book_data = [
         "status": "Available",
         "peminjaman": "Not borrowed",
         "author": "George Orwell",
-        "description": "Dystopian novel following Winston Smith's rebellion against the Party's totalitarian regime."
+        "description": "Dystopian novel following Winston Smith's rebellion against the Party's totalitarian regime.",
+        "jumlah": 3,
     },
     {
         "id": 4,
@@ -64,7 +67,8 @@ book_data = [
         "status": "Available",
         "peminjaman": "Not borrowed",
         "author": "Jane Austen",
-        "description": "Romantic novel exploring complex relationships and social hierarchy through Elizabeth Bennet and Mr. Darcy."
+        "description": "Romantic novel exploring complex relationships and social hierarchy through Elizabeth Bennet and Mr. Darcy.",
+        "jumlah": 2,
     },
     {
         "id": 5,
@@ -72,7 +76,8 @@ book_data = [
         "status": "Available",
         "peminjaman": "Not borrowed",
         "author": "J.D. Salinger",
-        "description": "Novel featuring teenage angst, following Holden Caulfield's journey through identity, alienation, and loss."
+        "description": "Novel featuring teenage angst, following Holden Caulfield's journey through identity, alienation, and loss.",
+        "jumlah": 1,
     },
     {
         "id": 6,
@@ -80,7 +85,8 @@ book_data = [
         "status": "Available",
         "peminjaman": "Not borrowed",
         "author": "J.R.R. Tolkien",
-        "description": "Fantasy novel following Bilbo Baggins on an unexpected adventure with dragons, dwarves, elves, and a magical ring."
+        "description": "Fantasy novel following Bilbo Baggins on an unexpected adventure with dragons, dwarves, elves, and a magical ring.",
+        "jumlah": 2,
     },
 ]
 
@@ -336,8 +342,8 @@ class LoginScreen(Screen):
         main_layout = MDBoxLayout(orientation='vertical', spacing=20, adaptive_height=True)
         main_layout.bind(minimum_height=main_layout.setter('height'))
 
-        # Menambahkan label "ePustaka" ke main_layout.
-        label = MDLabel(text="ePustaka", halign='center', font_style="H3")
+        # Menambahkan label "BacaCepat" ke main_layout.
+        label = MDLabel(text="BacaCepat", halign='center', font_style="H3")
         main_layout.add_widget(label)
 
         # Mendaklarasikan button_layout menggunakan MDBoxLayout.
@@ -508,6 +514,8 @@ class DetailScreen(Screen):
         self.book_detail_layout.pos_hint = {'y': 0.5}
 
         # Menambahkan book_detail_layout ke detail_layout.
+        self.detail_layout.add_widget(Label())
+        self.detail_layout.add_widget(Label())
         self.detail_layout.add_widget(self.book_detail_layout)
         self.add_widget(self.detail_layout)
 
@@ -524,45 +532,52 @@ class DetailScreen(Screen):
         # Mendapatkan instance dari layar sejarah.
         history_screen = self.manager.get_screen("history")
 
+        home_screen = self.manager.get_screen("home")
+
         # Memeriksa status buku dan melakukan tindakan yang sesuai.
-        if book_info['status'] == 'Available':
-            # Jika status buku "Available", ubah status menjadi "Unavailable" dan set peminjaman menjadi "Borrowed".
-            book_info['status'] = 'Unavailable'
-            book_info['peminjaman'] = 'Borrowed'
+        if book_info['status'] == 'Available' and book_info['peminjaman'] != 'Borrowed':
             
+            # Kurangi jumlah buku.
+            self.update_qty(book_info['title'], -1)
+
+            if book_info['jumlah'] <= 0:
+                book_info['status'] = 'Unavailable'
+
+
             # Ubah teks tombol menjadi 'Return'.
             instance.text = 'Return'
 
-            # Perbarui status buku di home screen dan tampilkan detail buku.
-            self.update_book_status(book_info['title'], 'Unavailable', 'Borrowed')
-            self.show_book_details(book_info)
+            # Ubah peminjaman menjadi 'Borrowed'.
+            book_info['peminjaman'] = 'Borrowed'
 
-        elif book_info['status'] == 'Unavailable' and book_info['peminjaman'] == 'Borrowed':
-            # Jika status buku "Unavailable" dan sedang dipinjam, ubah status menjadi "Available" dan set peminjaman menjadi "Returned".
-            book_info['status'] = 'Available'
+        elif book_info['peminjaman'] == 'Borrowed':
+            # Tambah jumlah buku.
+            self.update_qty(book_info['title'], 1)
+
+            if book_info['jumlah'] > 0:
+                book_info['status'] = 'Available'
+
+            # Ubah status menjadi "Available" dan peminjaman menjadi "Returned".
             book_info['peminjaman'] = 'Returned'
-            
+
             # Ubah teks tombol menjadi 'Borrow'.
             instance.text = 'Borrow'
 
-            # Perbarui status buku di home screen, tampilkan detail buku, dan hapus widget pada history_grid di history screen.
-            self.update_book_status(book_info['title'], 'Available', 'Returned')
-            self.show_book_details(book_info)
+
             history_screen.history_grid.clear_widgets()
 
-    # Membuat fungsi update_book_status
-    def update_book_status(self, book_title, new_status, new_peminjaman):
-        # Memperbarui status buku di home screen.
-        app = MDApp.get_running_app()
-        app.root.get_screen("home").refresh_home_screen(book_title, new_status, new_peminjaman)
+        # Tampilkan kembali detail buku.
+        self.show_book_details(book_info)
 
-        # Memperbarui status buku dalam data buku.
+        home_screen.refresh_home_screen(book_info['title'], book_info['status'], book_info['peminjaman'])
+
+    def update_qty(self, book_title, change):
+        # Memperbarui jumlah buku.
         for book in book_data:
             if book['title'] == book_title:
-                book['status'] = new_status
-                book['peminjaman'] = new_peminjaman
+                book['jumlah'] += change
 
-    # Membuat fungsi show_book_details
+    # Memperbarui status buku di home screen.
     def show_book_details(self, book_info):
         # Menghapus semua widget dari book_detail_layout.
         self.book_detail_layout.clear_widgets()
@@ -576,7 +591,7 @@ class DetailScreen(Screen):
 
         # Membuat tombol pinjam atau kembalikan buku.
         borrow_button = MDRectangleFlatButton(
-            text='Borrow' if book_info['status'] == 'Available' else 'Return',
+            text='Borrow' if book_info['peminjaman'] == 'Not Borrowed' or book_info['peminjaman'] == 'Returned' else 'Return',
             size_hint=(1, None),
             height=42,
             md_bg_color="blue",
@@ -595,7 +610,6 @@ class DetailScreen(Screen):
 
         # Beralih ke layar detail.
         self.manager.current = 'detail'
-
 
 # Kelas HistoryScreen untuk menampilkan Screen History.
 class HistoryScreen(Screen):
@@ -758,6 +772,7 @@ class NewBookScreen(Screen):
         title_field = MDTextField(hint_text="Title")
         author_field = MDTextField(hint_text="Author")
         description_field = MDTextField(hint_text="Description")
+        jumlah_field = MDTextField(hint_text="Jumlah")
         
         # Membuat tombol simpan menggunakan MDRectangleFlatButton.
         save_button = MDRectangleFlatButton(
@@ -773,6 +788,7 @@ class NewBookScreen(Screen):
         self.new_book_layout.add_widget(title_field)
         self.new_book_layout.add_widget(author_field)
         self.new_book_layout.add_widget(description_field)
+        self.new_book_layout.add_widget(jumlah_field)
         self.new_book_layout.add_widget(save_button)
 
         # Menambahkan new_book_layout ke dalam Screen.
@@ -785,9 +801,10 @@ class NewBookScreen(Screen):
     # Membuat Fungsi add_new_book.
     def add_new_book(self, instance):
         # Mendapatkan nilai dari field input.
-        title = self.new_book_layout.children[3].text
-        author = self.new_book_layout.children[2].text
-        description = self.new_book_layout.children[1].text
+        title = self.new_book_layout.children[4].text
+        author = self.new_book_layout.children[3].text
+        description = self.new_book_layout.children[2].text
+        jumlah = self.new_book_layout.children[1].text
 
         # Menentukan ID untuk buku baru.
         new_book_id = book_data[-1]['id'] + 1 if book_data else 1 
@@ -799,7 +816,8 @@ class NewBookScreen(Screen):
             "status": "Available",
             "peminjaman": "Not borrowed",
             "author": author,
-            "description": description
+            "description": description,
+            "jumlah": int(jumlah)
         }
 
         # Menambahkan buku baru ke dalam daftar buku.
@@ -822,6 +840,7 @@ class NewBookScreen(Screen):
             home_screen.add_book_to_grid(book)
         
         # Mengosongkan field input setelah buku ditambahkan.
+        self.new_book_layout.children[4].text = ""
         self.new_book_layout.children[3].text = ""
         self.new_book_layout.children[2].text = ""
         self.new_book_layout.children[1].text = ""
@@ -857,6 +876,7 @@ class EditBookScreen(Screen):
         self.description_field = MDTextField(hint_text="Description")
         self.status_field = MDTextField(hint_text="Status")
         self.peminjaman_field = MDTextField(hint_text="Peminjaman")
+        self.jumlah_field = MDTextField(hint_text="Jumlah")
 
         # Membuat tombol simpan menggunakan MDRectangleFlatButton.
         save_button = MDRectangleFlatButton(
@@ -874,6 +894,7 @@ class EditBookScreen(Screen):
         self.edit_layout.add_widget(self.description_field)
         self.edit_layout.add_widget(self.status_field)
         self.edit_layout.add_widget(self.peminjaman_field)
+        self.edit_layout.add_widget(self.jumlah_field)
         self.edit_layout.add_widget(MDLabel())
         self.edit_layout.add_widget(MDLabel())
         self.edit_layout.add_widget(MDLabel())
@@ -897,6 +918,7 @@ class EditBookScreen(Screen):
         new_description = self.description_field.text
         new_status = self.status_field.text
         new_peminjaman = self.peminjaman_field.text
+        new_jumlalh = int(self.jumlah_field.text)
 
         # Memperbarui informasi buku.
         self.book_info['title'] = new_title
@@ -904,6 +926,7 @@ class EditBookScreen(Screen):
         self.book_info['description'] = new_description
         self.book_info['status'] = new_status
         self.book_info['peminjaman'] = new_peminjaman
+        self.book_info['jumlah'] = new_jumlalh
 
         # Mencari buku yang akan diperbarui berdasarkan 'id' dan memperbarui data buku.
         for i, book in enumerate(book_data):
@@ -936,6 +959,7 @@ class EditBookScreen(Screen):
         self.description_field.text = self.book_info.get('description', '')
         self.status_field.text = self.book_info.get('status', '')
         self.peminjaman_field.text = self.book_info.get('peminjaman', '')
+        self.jumlah_field.text = str(self.book_info.get('jumlah', ''))
 
     # Membuat fungsi untuk menampilkan konfirmasi penghapusan.
     def show_delete_confirmation(self, instance):
@@ -977,8 +1001,8 @@ class EditBookScreen(Screen):
         self.manager.current = "admin_home"
     
 
-# Kelas ePustaka untuk menginisialisasi aplikasi.
-class ePustaka(MDApp):
+# Kelas BacaCepat untuk menginisialisasi aplikasi.
+class BacaCepat(MDApp):
     def build(self):
         # Mengatur tema aplikasi ke "Light".
         self.theme_cls.theme_style = "Light"
@@ -1032,4 +1056,4 @@ class ePustaka(MDApp):
 
 # Menjalankan aplikasi jika file ini dijalankan sebagai program utama.
 if __name__ == "__main__":
-    ePustaka().run()
+    BacaCepat().run()
